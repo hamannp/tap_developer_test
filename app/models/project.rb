@@ -1,4 +1,7 @@
 class Project < ApplicationRecord
+
+  include ProjectStatus
+
   belongs_to :client
 
   validates :client, presence: true
