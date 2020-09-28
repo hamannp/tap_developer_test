@@ -2,7 +2,11 @@ class API < Grape::API
   prefix 'api/v1'
   format :json
 
-  User = Struct.new(:id, :name)
+  User = Struct.new(:id, :name) do
+    def admin?
+      true
+    end
+  end
 
   helpers do
     def current_user
