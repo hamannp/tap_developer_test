@@ -7,10 +7,8 @@ module Concepts
     end
 
     get :projects do
-      { projects: paginate(Project.all, declared(params)),
-        page: params[:page] || '1',
-        per_page: params[:per_page] || ENV['MAX_PROJECTS_PER_PAGE']
-      }
+      projects = paginate(Project.all, declared(params))
+      present_with_pagination :projects, projects, expose_client: current_user.admin?
     end
 
     desc 'Creates a new client while adding a project.'
@@ -30,7 +28,7 @@ module Concepts
         error!("client: #{client.errors.full_messages.join(", ")}", 422)
       end
 
-      { projects: Array.wrap(project) }
+      present_with :projects, project, expose_client: true
     end
 
     resources '/clients/:client_id/' do
@@ -40,12 +38,10 @@ module Concepts
         optional :page
       end
       get :projects do
-        client = Client.find(params[:client_id])
+        client   = Client.find(params[:client_id])
+        projects = paginate(client.projects, declared(params))
 
-        { projects: paginate(client.projects, declared(params)),
-          page: params[:page] || '1',
-          per_page: params[:per_page] || ENV['MAX_PROJECTS_PER_PAGE']
-        }
+        present_with_pagination :projects, projects, expose_client: current_user.admin?
       end
 
       desc 'Return client project with the given id'
@@ -54,16 +50,15 @@ module Concepts
         requires :id, type: Integer, desc: 'Project ID.'
       end
       get 'projects/:id' do
-
         client  = Client.find(params[:client_id])
         project = client.projects.find(params[:id])
 
-        { projects: Array.wrap(project) }
+        present_with :projects, project, expose_client: current_user.admin?
       end
 
       desc 'Creates a new project for a given client.'
       params do
-        requires :client_id
+        requires :client_id, type: Integer, desc: 'Client ID.'
         requires :name
         requires :project_status_id
       end
@@ -71,23 +66,23 @@ module Concepts
         client  = Client.find(params[:client_id])
         project = client.projects.create!(declared(params))
 
-        { projects: Array.wrap(project) }
+        present_with :projects, project, expose_client: current_user.admin?
       end
 
       desc 'Updates an existing project for a given client.'
       params do
-        requires :client_id
+        requires :client_id, type: Integer, desc: 'Client ID.'
         requires :id, type: Integer, desc: 'Project ID.'
 
         optional :name
-        optional :project_status_id
+        optional :project_status_id, type: Integer, desc: 'Status ID.'
       end
       put 'projects/:id' do
         client  = Client.find(params[:client_id])
         project = client.projects.find(params[:id])
         project.update!(declared(params).slice(:name, :project_status_id))
 
-        { projects: Array.wrap(project) }
+        present_with :projects, project, expose_client: current_user.admin?
       end
 
       desc 'Delete client project with the given id'
@@ -101,7 +96,7 @@ module Concepts
         project = client.projects.find(params[:id])
         project.destroy!
 
-        { projects: Array.wrap(project) }
+        present_with :projects, project, expose_client: current_user.admin?
       end
     end
   end

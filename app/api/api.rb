@@ -20,6 +20,17 @@ class API < Grape::API
     def paginate(collection, opts)
       Paginator.new(collection, opts).paginate
     end
+
+    def present_with_pagination(root, collection, options)
+      present({ page: params[:page] || '1', per_page: params[:per_page] || ENV['MAX_PROJECTS_PER_PAGE'] })
+      present root, collection,
+        { with: "API::Entities::#{root.to_s.singularize.capitalize}".constantize}.merge(options)
+    end
+
+    def present_with(root, collection, options)
+      present root, Array.wrap(collection),
+        { with: "API::Entities::#{root.to_s.singularize.capitalize}".constantize}.merge(options)
+    end
   end
 
   rescue_from ActiveRecord::RecordNotFound do |error|

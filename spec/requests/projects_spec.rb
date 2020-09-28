@@ -34,6 +34,7 @@ RSpec.describe "Projects", type: :request do
 
         it "returns the collection of projects" do
           get '/api/v1/projects'
+
           expect(response).to have_http_status(200)
           expect(json_payload['projects'].map { |p|  p['name'] }).to match_array([
             project1.name, project2.name
@@ -96,6 +97,9 @@ RSpec.describe "Projects", type: :request do
           expect(response).to have_http_status(200)
           expect(json_payload['projects'].map { |p|  p['name'] }).to match_array([
             project1.name
+          ])
+          expect(json_payload['projects'].first['client'].keys).to match_array([
+            "created_at", "id", "name", "updated_at"
           ])
         end
       end
@@ -195,19 +199,20 @@ RSpec.describe "Projects", type: :request do
       context 'error when client not found' do
 
         let(:project_name) { 'My new project' }
-        let(:api_url) { "/api/v1/clients/not_there/projects" }
+        let(:api_url) { "/api/v1/clients/#{not_there}/projects" }
         let(:api_params) do
           {
             name: project_name,
             project_status_id: project_status_id
           }
         end
+        let(:not_there) { 9999999999 }
 
         it "returns 404" do
           post api_url, params: api_params
 
           expect(response).to have_http_status(404)
-          expect(json_errors).to eq "Couldn't find Client with 'id'=not_there"
+          expect(json_errors).to eq "Couldn't find Client with 'id'=#{not_there}"
         end
       end
 
@@ -331,7 +336,7 @@ RSpec.describe "Projects", type: :request do
           expect(response).to have_http_status(200)
           expect(json_payload['projects'].count).to eq 1
           expect(json_payload['projects'].first['name']).to eq updated_project_name
-          expect(json_payload['projects'].first['project_status_id']).to eq ProjectStatus::Done.id
+          expect(json_payload['projects'].first['project_status']).to eq ProjectStatus::Done.name
         end
       end
     end
