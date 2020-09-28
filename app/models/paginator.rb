@@ -1,21 +1,24 @@
 class Paginator
-  MAX_PER_PAGE = 1000
 
-  def initialize(collection, opts)
-    @collection = collection
-    @page       = (opts[:page] || 1).to_i
-    @per_page   = (opts[:per_page] || 100).to_i
+  def initialize(relation, opts={})
+    @relation = relation
+    @page     = opts[:page].to_i || 1
+    @per_page = (opts[:per_page] || default_per_page).to_i
 
-    if @per_page > MAX_PER_PAGE
-      @per_page = MAX_PER_PAGE
+    if @per_page > default_per_page
+      @per_page = default_per_page
     end
   end
 
   def paginate
-    collection.order(:created_at).limit(per_page).offset(per_page * (page - 1))
+    relation.order(:created_at).limit(per_page).offset(per_page * (page - 1))
   end
 
   private
 
-  attr_reader :page, :per_page, :collection
+  def default_per_page
+    ENV['MAX_PROJECTS_PER_PAGE'].to_i
+  end
+
+  attr_reader :page, :per_page, :relation
 end

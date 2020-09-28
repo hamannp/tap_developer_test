@@ -7,8 +7,10 @@ module Concepts
     end
 
     get :projects do
-      #TODO add page and per_page
-      { projects: paginate(Project.all, declared(params)) }
+      { projects: paginate(Project.all, declared(params)),
+        page: params[:page] || '1',
+        per_page: params[:per_page] || ENV['MAX_PROJECTS_PER_PAGE']
+      }
     end
 
     desc 'Creates a new client while adding a project.'
@@ -33,12 +35,17 @@ module Concepts
 
     resources '/clients/:client_id/' do
       desc 'Return projects for a given client.'
+      params do
+        optional :per_page
+        optional :page
+      end
       get :projects do
-
         client = Client.find(params[:client_id])
 
-        #TODO paginate add page and per_page
-        { projects: client.projects }
+        { projects: paginate(client.projects, declared(params)),
+          page: params[:page] || '1',
+          per_page: params[:per_page] || ENV['MAX_PROJECTS_PER_PAGE']
+        }
       end
 
       desc 'Return client project with the given id'
@@ -78,7 +85,7 @@ module Concepts
       put 'projects/:id' do
         client  = Client.find(params[:client_id])
         project = client.projects.find(params[:id])
-        project.update_attributes!(declared(params).slice(:name, :project_status_id))
+        project.update!(declared(params).slice(:name, :project_status_id))
 
         { projects: Array.wrap(project) }
       end

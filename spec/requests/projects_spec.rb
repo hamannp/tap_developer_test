@@ -41,6 +41,39 @@ RSpec.describe "Projects", type: :request do
         end
       end
 
+      context 'with pagination' do
+        let!(:projects) do
+          Project.create!(name: 'Project 1', client: client,
+                          project_status_id: ProjectStatus::Done.id)
+          sleep 1.1
+
+          Project.create!(name: 'Project 2', client: client,
+                          project_status_id: ProjectStatus::Done.id)
+          sleep 1.1
+
+          Project.create!(name: 'Project 3', client: client,
+                          project_status_id: ProjectStatus::Done.id)
+
+          sleep 1.1
+          Project.create!(name: 'Project 4', client: client,
+                          project_status_id: ProjectStatus::New.id)
+        end
+
+        let(:expected_project_names) { Project.order(:created_at).last(2).map(&:name) }
+
+        let(:per_page) { '2' }
+        let(:page) { '2' }
+
+        it "returns the collection of projects" do
+          get "/api/v1/projects?page=#{page}&per_page=#{per_page}"
+
+          expect(response).to have_http_status(200)
+          expect(json_payload['projects'].map { |p|  p['name'] }).to eq(expected_project_names)
+          expect(json_payload['per_page']).to eq per_page
+          expect(json_payload['page']).to eq page
+        end
+      end
+
     end
   end
 
@@ -84,9 +117,12 @@ RSpec.describe "Projects", type: :request do
           Project.create!(name: 'No match', client: no_match_client,
                           project_status_id: project_status_id)
         end
+        let(:api_url) do
+          "/api/v1/clients/#{client.id}/projects"
+        end
 
         it "returns the collection of projects for that client only" do
-          get "/api/v1/clients/#{client.id}/projects"
+          get api_url
 
           expect(response).to have_http_status(200)
           expect(json_payload['projects'].count).to eq 1
@@ -94,6 +130,43 @@ RSpec.describe "Projects", type: :request do
         end
       end
 
+    end
+
+    context 'with pagination' do
+      let!(:projects) do
+        Project.create!(name: 'Project 1', client: client,
+                        project_status_id: ProjectStatus::Done.id)
+        sleep 1.1
+
+        Project.create!(name: 'Project 2', client: client,
+                        project_status_id: ProjectStatus::Done.id)
+        sleep 1.1
+
+        Project.create!(name: 'Project 3', client: client,
+                        project_status_id: ProjectStatus::Done.id)
+
+        sleep 1.1
+        Project.create!(name: 'Project 4', client: client,
+                        project_status_id: ProjectStatus::New.id)
+      end
+
+      let(:expected_project_names) { Project.order(:created_at).last(2).map(&:name) }
+
+      let(:per_page) { '2' }
+      let(:page) { '2' }
+
+      let(:api_url) do
+        "/api/v1/clients/#{client.id}/projects?page=#{page}&per_page=#{per_page}"
+      end
+
+      it "returns the collection of projects" do
+        get api_url
+
+        expect(response).to have_http_status(200)
+        expect(json_payload['projects'].map { |p|  p['name'] }).to eq(expected_project_names)
+        expect(json_payload['per_page']).to eq per_page
+        expect(json_payload['page']).to eq page
+      end
     end
   end
 
