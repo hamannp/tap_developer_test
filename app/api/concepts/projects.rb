@@ -5,9 +5,10 @@ module Concepts
       optional :per_page
       optional :page
     end
-
     get :projects do
-      projects = paginate(Project.all, declared(params))
+      permit!(:projects, :index)
+
+      projects = paginate(Project.list_all, declared(params))
       present_with_pagination :projects, projects, expose_client: current_user.admin?
     end
 
@@ -20,12 +21,15 @@ module Concepts
       requires :project_status_id
     end
     post :projects do
-      client = Client.create(declared(params)[:client])
+      permit!(:clients, :create)
+      permit!(:projects, :create)
+
+      client = Client.make(declared(params)[:client])
 
       if client.valid?
-        project = client.projects.create!(declared(params).except(:client))
+        project = client.make_project!(declared(params).except(:client))
       else
-        error!("client: #{client.errors.full_messages.join(", ")}", 422)
+        error!("client: #{error_messages_for(client)}", 422)
       end
 
       present_with :projects, project, expose_client: true
@@ -38,8 +42,11 @@ module Concepts
         optional :page
       end
       get :projects do
-        client   = Client.find(params[:client_id])
-        projects = paginate(client.projects, declared(params))
+        permit!(:clients, :show)
+        permit!(:projects, :index)
+
+        client   = Client.fetch_by_id!(params[:client_id])
+        projects = paginate(client.list_projects, declared(params))
 
         present_with_pagination :projects, projects, expose_client: current_user.admin?
       end
@@ -50,10 +57,13 @@ module Concepts
         requires :id, type: Integer, desc: 'Project ID.'
       end
       get 'projects/:id' do
-        client  = Client.find(params[:client_id])
-        project = client.projects.find(params[:id])
+        permit!(:clients, :show)
+        permit!(:projects, :show)
 
-        present_with :projects, project, expose_client: current_user.admin?
+        client  = Client.fetch_by_id!(params[:client_id])
+        project = client.fetch_project!(params[:id])
+
+        present_with :projects, project, expose_client: true
       end
 
       desc 'Creates a new project for a given client.'
@@ -63,8 +73,11 @@ module Concepts
         requires :project_status_id
       end
       post :projects do
-        client  = Client.find(params[:client_id])
-        project = client.projects.create!(declared(params))
+        permit!(:clients, :show)
+        permit!(:projects, :create)
+
+        client  = Client.fetch_by_id!(params[:client_id])
+        project = client.make_project!(declared(params))
 
         present_with :projects, project, expose_client: current_user.admin?
       end
@@ -78,8 +91,11 @@ module Concepts
         optional :project_status_id, type: Integer, desc: 'Status ID.'
       end
       put 'projects/:id' do
-        client  = Client.find(params[:client_id])
-        project = client.projects.find(params[:id])
+        permit!(:clients, :show)
+        permit!(:projects, :update)
+
+        client  = Client.fetch_by_id!(params[:client_id])
+        project = client.fetch_project!(params[:id])
         project.update!(declared(params).slice(:name, :project_status_id))
 
         present_with :projects, project, expose_client: current_user.admin?
@@ -91,9 +107,11 @@ module Concepts
         requires :id, type: Integer, desc: 'Project ID.'
       end
       delete 'projects/:id' do
+        permit!(:clients, :show)
+        permit!(:projects, :delete)
 
-        client  = Client.find(params[:client_id])
-        project = client.projects.find(params[:id])
+        client  = Client.fetch_by_id!(params[:client_id])
+        project = client.fetch_project!(params[:id])
         project.destroy!
 
         present_with :projects, project, expose_client: current_user.admin?

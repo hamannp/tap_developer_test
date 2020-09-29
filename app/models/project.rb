@@ -8,4 +8,7 @@ class Project < ApplicationRecord
   validates :name, presence: true,
                    uniqueness: true,
                    length: { maximum: ENV["MAX_INPUT_LENGTH"].to_i }
+  def self.list_all
+    all
+  end
 end
