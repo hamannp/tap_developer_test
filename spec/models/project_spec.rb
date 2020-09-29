@@ -1,10 +1,9 @@
 require 'rails_helper'
 
 describe Project do
-  let(:client) { Client.create!(name: 'Existing') }
+  let(:client) { create(:client, name: 'Existing') }
   let(:existing_project) do
-    Project.create!(name: 'Existing', client: client,
-                    project_status_id: ProjectStatus::InProgress.id)
+    create(:project, name: 'Existing', client: client)
   end
 
   it 'is valid with a unique name, a valid status, and an existing client' do

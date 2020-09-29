@@ -1,8 +1,10 @@
 require 'rails_helper'
 
 describe Client do
+  # TODO: make shared example for use in Project and future models.
+
   describe '#name' do
-    let(:existing_client) { Client.create!(name: 'Existing') }
+    let(:existing_client) { create(:client, name: 'Existing') }
 
     it 'is invalid when name is blank' do
       client = Client.new(name: '')
